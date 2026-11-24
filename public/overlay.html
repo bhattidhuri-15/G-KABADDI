@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kabaddi Aggressive Live Overlay v3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Teko:wght@600;700&family=Noto+Sans+Gurmukhi:wght@700;900&family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            width: 1920px; height: 1080px;
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Poppins', 'Noto Sans Gurmukhi', sans-serif;
+            position: relative;
+        }
+
+        @keyframes slamIn {
+            0% { opacity: 0; transform: scale(1.38) skewX(-8deg); filter: brightness(2.6) blur(6px); }
+            55% { opacity: 1; transform: scale(0.96) skewX(2deg); filter: brightness(1.35) blur(0); }
+            78% { transform: scale(1.03) skewX(-1deg); }
+            100% { opacity: 1; transform: scale(1) skewX(0deg); filter: brightness(1); }
+        }
+
+        @keyframes firePulse {
+            0%, 100% {
+                box-shadow: 0 0 28px rgba(255, 72, 0, 0.85), 0 0 65px rgba(255, 196, 0, 0.45), inset 0 0 25px rgba(255, 94, 0, 0.35);
+            }
+            50% {
+                box-shadow: 0 0 46px rgba(255, 42, 0, 1), 0 0 95px rgba(255, 208, 0, 0.7), inset 0 0 35px rgba(255, 150, 0, 0.55);
+            }
+        }
+
+        @keyframes flameRise {
+            0% { transform: translateY(25px) scaleY(0.8); opacity: 0.25; }
+            50% { transform: translateY(-12px) scaleY(1.15); opacity: 0.65; }
+            100% { transform: translateY(-48px) scaleY(0.85); opacity: 0; }
+        }
+
+        @keyframes slideRightAggressive {
+            0% { transform: translateX(-160px) skewX(-10deg); opacity: 0; }
+            70% { transform: translateX(12px) skewX(2deg); opacity: 1; }
+            100% { transform: translateX(0) skewX(0deg); opacity: 1; }
+        }
+
+        .screen-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center;
+            padding-bottom: 62px;
+            z-index: 20;
+        }
+        .screen-panel.active {
+            display: flex;
+            animation: slamIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 1. AGGRESSIVE FIRE GROUND INTRO */
+        .ground-arena {
+            position: relative;
+            background: radial-gradient(circle at center, rgba(255, 85, 0, 0.28) 0%, rgba(16, 12, 18, 0.96) 68%);
+            border: 4px solid #ffae00;
+            border-radius: 22px;
+            padding: 55px 100px;
+            text-align: center;
+            overflow: hidden;
+            animation: firePulse 1.8s infinite ease-in-out;
+        }
+        .flame-layer {
+            position: absolute; bottom: -20px; left: 0; width: 100%; height: 160px;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255, 45, 0, 0.0) 0px,
+                rgba(255, 60, 0, 0.45) 35px,
+                rgba(255, 195, 0, 0.55) 65px,
+                rgba(255, 45, 0, 0.0) 105px
+            );
+            filter: blur(12px);
+            pointer-events: none;
+            animation: flameRise 1.6s infinite ease-out;
+        }
+        .tourney-blast {
+            position: relative; z-index: 2;
+            font-family: 'Anton', 'Poppins', sans-serif;
+            color: #ffd000;
+            font-size: 38px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 0 3px 12px rgba(0, 0, 0, 0.95);
+        }
+        .ground-blast-title {
+            position: relative; z-index: 2;
+            font-family: 'Anton', 'Teko', sans-serif;
+            font-size: 112px;
+            line-height: 1.02;
+            margin-top: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, #ffffff 10%, #ffd000 52%, #ff3c00 95%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.95));
+        }
+        .fire-badge {
+            position: relative; z-index: 2;
+            display: inline-block;
+            margin-top: 24px;
+            padding: 8px 34px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #ff1e00, #ff7b00, #ff1e00);
+            border: 2px solid #ffd000;
+            color: #fff;
+            font-family: 'Anton', sans-serif;
+            font-size: 28px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            box-shadow: 0 0 24px rgba(255, 72, 0, 0.9);
+        }
+
+        /* 2. TEAM VS TEAM + LOGOS + CAPTAIN PHOTOS */
+        .vs-stage {
+            display: flex; align-items: center; justify-content: center; gap: 38px;
+            width: 100%; padding: 40px 60px;
+            background: linear-gradient(90deg, rgba(10, 14, 26, 0.96), rgba(24, 28, 46, 0.96), rgba(10, 14, 26, 0.96));
+            border-top: 6px solid #ffd000;
+            border-bottom: 6px solid #ff4d00;
+            box-shadow: 0 24px 65px rgba(0, 0, 0, 0.92);
+        }
+        .vs-fighter {
+            flex: 1; max-width: 680px;
+            background: linear-gradient(160deg, #1b2442, #0d1224);
+            border: 3px solid #ffd000;
+            border-radius: 18px;
+            padding: 26px 32px;
+            display: flex; flex-direction: column; align-items: center; gap: 18px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.8);
+        }
+        .vs-fighter.b-side {
+            background: linear-gradient(160deg, #42161b, #1a090c);
+            border-color: #ff5e00;
+        }
+        .vs-team-top {
+            display: flex; align-items: center; justify-content: center; gap: 18px; width: 100%;
+        }
+        .vs-logo-box {
+            width: 92px; height: 92px; border-radius: 14px;
+            background: rgba(255, 255, 255, 0.08); border: 2px solid #ffd000;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .vs-logo-box img { width: 100%; height: 100%; object-fit: contain; }
+        .vs-logo-fallback {
+            font-family: 'Anton', sans-serif; font-size: 38px; color: #ffd000;
+        }
+        .vs-team-names { text-align: left; }
+        .vs-team-en {
+            font-family: 'Anton', 'Teko', sans-serif;
+            font-size: 56px; line-height: 1; color: #fff; letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .vs-team-pa {
+            font-family: 'Noto Sans Gurmukhi', sans-serif;
+            font-size: 34px; font-weight: 900; color: #ffd000; line-height: 1.15;
+        }
+        .captain-card {
+            display: flex; align-items: center; gap: 20px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            border: 2px solid rgba(255, 208, 0, 0.45);
+            border-radius: 14px;
+            padding: 12px 18px;
+        }
+        .captain-photo {
+            width: 118px; height: 118px; border-radius: 12px;
+            object-fit: cover; border: 3px solid #ffd000;
+            background: #23283b; flex-shrink: 0;
+        }
+        .captain-avatar-fallback {
+            width: 118px; height: 118px; border-radius: 12px;
+            border: 3px solid #ffd000; background: #262c44;
+            color: #ffd000; font-family: 'Anton', sans-serif; font-size: 46px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .captain-tag {
+            font-size: 16px; font-weight: 800; color: #ff7b00;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .captain-name {
+            font-family: 'Teko', sans-serif; font-size: 44px; line-height: 1.05; color: #fff;
+        }
+        .vs-badge-slam {
+            width: 136px; height: 136px; border-radius: 50%; flex-shrink: 0;
+            background: radial-gradient(circle, #fff200 0%, #ff7b00 65%, #d90429 100%);
+            border: 4px solid #fff;
+            color: #111; font-family: 'Anton', sans-serif; font-size: 68px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 40px rgba(255, 123, 0, 0.95);
+        }
+
+        /* 3 & 4. TEAM SQUAD CARDS WITH PLAYER PHOTOS */
+        .squad-stage {
+            width: 1180px;
+            background: linear-gradient(145deg, #101629, #1f2a48);
+            border: 4px solid #ffd000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 28px 70px rgba(0, 0, 0, 0.92);
+        }
+        .squad-top-banner {
+            background: linear-gradient(90deg, #ff4d00, #ffd000, #ff4d00);
+            padding: 16px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .squad-banner-en {
+            font-family: 'Anton', 'Teko', sans-serif;
+            font-size: 54px; line-height: 1; color: #0b0d14; text-transform: uppercase;
+        }
+        .squad-banner-pa {
+            font-family: 'Noto Sans Gurmukhi', sans-serif;
+            font-size: 36px; font-weight: 900; color: #0b0d14;
+        }
+        .squad-photo-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 26px;
+        }
+        .player-photo-card {
+            display: flex; align-items: center; gap: 16px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 208, 0, 0.35);
+            border-left: 7px solid #ffd000;
+            border-radius: 10px;
+            padding: 10px 16px;
+        }
+        .player-thumb {
+            width: 72px; height: 72px; border-radius: 10px;
+            object-fit: cover; border: 2px solid #ffd000;
+            background: #22293d; flex-shrink: 0;
+        }
+        .player-thumb-fallback {
+            width: 72px; height: 72px; border-radius: 10px;
+            border: 2px solid #ffd000; background: #262e47;
+            color: #ffd000; font-family: 'Anton', sans-serif; font-size: 30px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .player-label-text {
+            font-family: 'Teko', 'Noto Sans Gurmukhi', sans-serif;
+            font-size: 36px; line-height: 1.05; color: #fff;
+        }
+
+        /* 5. LEFT CORNER LIVE SCOREBOARD + SCROLLING ENGLISH & PUNJABI TEAM NAMES */
+        .left-corner-score {
+            position: absolute; top: 42px; left: 45px;
+            display: none; flex-direction: column;
+            width: 445px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.88);
+            border: 3px solid #ffd000;
+            z-index: 30;
+        }
+        .left-corner-score.active {
+            display: flex;
+            animation: slideRightAggressive 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .lscore-top-bar {
+            background: linear-gradient(90deg, #ffd000, #ff7b00);
+            color: #090b10;
+            font-size: 16px; font-weight: 900;
+            padding: 5px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .lscore-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 14px; color: #fff; height: 64px; gap: 10px;
+        }
+        .lrow-a {
+            background: linear-gradient(90deg, #0d1b3e, #1d356b);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .lrow-b {
+            background: linear-gradient(90deg, #3b0d16, #8f1d2c);
+        }
+        .lteam-logo {
+            width: 42px; height: 42px; border-radius: 8px;
+            object-fit: contain; background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 208, 0, 0.6); padding: 2px; flex-shrink: 0;
+        }
+        .lteam-marquee-wrap {
+            flex: 1; overflow: hidden; white-space: nowrap; position: relative;
+        }
+        .lteam-marquee-inner {
+            display: inline-flex; align-items: center; gap: 18px;
+            padding-left: 100%;
+            animation: teamNameScroll 11s linear infinite;
+        }
+        .lteam-en {
+            font-family: 'Anton', 'Teko', sans-serif;
+            font-size: 30px; letter-spacing: 1px; color: #fff; text-transform: uppercase;
+        }
+        .lteam-pa {
+            font-family: 'Noto Sans Gurmukhi', sans-serif;
+            font-size: 24px; font-weight: 900; color: #ffd000;
+        }
+        @keyframes teamNameScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .lpts {
+            background: #07080c; color: #ffd000;
+            border: 2px solid #ffd000;
+            padding: 2px 12px; border-radius: 7px;
+            font-family: 'Anton', 'Teko', sans-serif; font-size: 36px; line-height: 1.05;
+            min-width: 74px; text-align: center; flex-shrink: 0;
+        }
+
+        /* 6. SPONSOR ROTATION WIDGET (Top-Right Corner) */
+        .sponsor-box {
+            position: absolute; top: 42px; right: 45px;
+            width: 330px;
+            background: linear-gradient(135deg, rgba(13, 18, 32, 0.96), rgba(32, 38, 62, 0.96));
+            border: 2px solid #ffd000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
+            display: none; flex-direction: column;
+            z-index: 25;
+        }
+        .sponsor-box.active { display: flex; }
+        .sponsor-header {
+            background: #ffd000; color: #000;
+            font-size: 13px; font-weight: 900;
+            text-align: center; padding: 4px 10px;
+            letter-spacing: 1.5px; text-transform: uppercase;
+        }
+        .sponsor-content {
+            height: 98px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 10px 16px; gap: 12px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .sponsor-content.fade-out { opacity: 0; transform: translateY(8px); }
+        .sponsor-logo-img {
+            max-height: 68px; max-width: 92px;
+            object-fit: contain; border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08); padding: 4px;
+        }
+        .sponsor-name-text {
+            font-family: 'Anton', 'Teko', sans-serif;
+            font-size: 32px; line-height: 1.05; color: #fff; text-align: center;
+        }
+
+        /* 7. BOTTOM TICKER BAR */
+        .bottom-ticker {
+            position: absolute; bottom: 0; left: 0;
+            width: 1920px; height: 56px;
+            background: linear-gradient(90deg, #090d1a, #17203b);
+            border-top: 3px solid #ffd000;
+            display: none; align-items: center;
+            box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.9);
+            z-index: 50;
+        }
+        .bottom-ticker.active { display: flex; }
+        .ticker-label {
+            background: linear-gradient(135deg, #ff2a00, #b91c1c);
+            color: #fff; height: 100%; padding: 0 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Anton', 'Poppins', sans-serif;
+            font-size: 22px; letter-spacing: 2px; text-transform: uppercase;
+            white-space: nowrap; border-right: 3px solid #ffd000; z-index: 2;
+        }
+        .ticker-track {
+            flex: 1; overflow: hidden; position: relative; height: 100%;
+            display: flex; align-items: center;
+        }
+        .ticker-move {
+            display: inline-block; white-space: nowrap; padding-left: 100%;
+            color: #fff; font-size: 23px; font-weight: 700; letter-spacing: 0.6px;
+            animation: tickerScroll 26s linear infinite;
+        }
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sponsorBox" class="sponsor-box">
+        <div class="sponsor-header">OFFICIAL SPONSOR</div>
+        <div id="sponsorContent" class="sponsor-content">
+            <img id="sponsorImg" class="sponsor-logo-img" src="" alt="" style="display:none;">
+            <div id="sponsorName" class="sponsor-name-text">SPONSOR</div>
+        </div>
+    </div>
+
+    <div id="view-ground" class="screen-panel">
+        <div class="ground-arena">
+            <div class="flame-layer"></div>
+            <div class="tourney-blast" id="ovTourney">TOURNAMENT</div>
+            <div class="ground-blast-title" id="ovGround">GROUND NAME</div>
+            <div class="fire-badge">🔥 LIVE CIRCLE KABADDI 🔥</div>
+        </div>
+    </div>
+
+    <div id="view-vs" class="screen-panel">
+        <div class="vs-stage">
+            <div class="vs-fighter">
+                <div class="vs-team-top">
+                    <div class="vs-logo-box" id="vsLogoBoxA"></div>
+                    <div class="vs-team-names">
+                        <div class="vs-team-en" id="ovVsTeamA">TEAM A</div>
+                        <div class="vs-team-pa" id="ovVsTeamAPa">ਟੀਮ ਏ</div>
+                    </div>
+                </div>
+                <div class="captain-card">
+                    <div id="capPhotoBoxA"></div>
+                    <div>
+                        <div class="captain-tag">TEAM A CAPTAIN</div>
+                        <div class="captain-name" id="ovCapA">CAPTAIN A</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vs-badge-slam">VS</div>
+
+            <div class="vs-fighter b-side">
+                <div class="vs-team-top">
+                    <div class="vs-logo-box" id="vsLogoBoxB"></div>
+                    <div class="vs-team-names">
+                        <div class="vs-team-en" id="ovVsTeamB">TEAM B</div>
+                        <div class="vs-team-pa" id="ovVsTeamBPa">ਟੀਮ ਬੀ</div>
+                    </div>
+                </div>
+                <div class="captain-card">
+                    <div id="capPhotoBoxB"></div>
+                    <div>
+                        <div class="captain-tag">TEAM B CAPTAIN</div>
+                        <div class="captain-name" id="ovCapB">CAPTAIN B</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-listA" class="screen-panel">
+        <div class="squad-stage">
+            <div class="squad-top-banner">
+                <div class="squad-banner-en" id="ovListTitleA">TEAM A SQUAD</div>
+                <div class="squad-banner-pa" id="ovListPaA">ਟੀਮ ਏ</div>
+            </div>
+            <div class="squad-photo-grid" id="ovPlayersA"></div>
+        </div>
+    </div>
+
+    <div id="view-listB" class="screen-panel">
+        <div class="squad-stage">
+            <div class="squad-top-banner">
+                <div class="squad-banner-en" id="ovListTitleB">TEAM B SQUAD</div>
+                <div class="squad-banner-pa" id="ovListPaB">ਟੀਮ ਬੀ</div>
+            </div>
+            <div class="squad-photo-grid" id="ovPlayersB"></div>
+        </div>
+    </div>
+
+    <div id="view-score" class="left-corner-score">
+        <div class="lscore-top-bar">
+            <span>🔥 CIRCLE KABADDI</span>
+            <span id="ovHalf">1ST HALF</span>
+        </div>
+        <div class="lscore-row lrow-a">
+            <img id="lScoreLogoA" class="lteam-logo" src="" alt="" style="display:none;">
+            <div class="lteam-marquee-wrap">
+                <div class="lteam-marquee-inner">
+                    <span class="lteam-en" id="ovScoreTeamA">TEAM A</span>
+                    <span class="lteam-pa" id="ovScoreTeamAPa">ਟੀਮ ਏ</span>
+                </div>
+            </div>
+            <span class="lpts" id="ovPtsA">0</span>
+        </div>
+        <div class="lscore-row lrow-b">
+            <img id="lScoreLogoB" class="lteam-logo" src="" alt="" style="display:none;">
+            <div class="lteam-marquee-wrap">
+                <div class="lteam-marquee-inner">
+                    <span class="lteam-en" id="ovScoreTeamB">TEAM B</span>
+                    <span class="lteam-pa" id="ovScoreTeamBPa">ਟੀਮ ਬੀ</span>
+                </div>
+            </div>
+            <span class="lpts" id="ovPtsB">0</span>
+        </div>
+    </div>
+
+    <div id="bottomTicker" class="bottom-ticker">
+        <div class="ticker-label" id="ovTickerBadge">LIVE KABADDI</div>
+        <div class="ticker-track">
+            <div class="ticker-move" id="ovTickerText">WELCOME TO CIRCLE KABADDI LIVE BROADCAST</div>
+        </div>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let sponsorsList = [];
+    let currentSponsorIdx = 0;
+    let sponsorTimer = null;
+    let currentIntervalSec = 6;
+    let lastTickerText = "";
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
+    }
+
+    function getInitials(name) {
+        const clean = String(name || '').replace(/^[0-9]+\.\s*/, '').trim();
+        const parts = clean.split(/\s+/);
+        return ((parts[0] && parts[0][0]) || 'P').toUpperCase();
+    }
+
+    function renderLogoBox(containerId, logoUrl, fallbackText) {
+        const box = document.getElementById(containerId);
+        if (logoUrl && logoUrl.trim() !== '') {
+            box.innerHTML = `<img src="${escapeHtml(logoUrl.trim())}" alt="Logo" onerror="this.parentElement.innerHTML='<div class=\'vs-logo-fallback\'>${escapeHtml(fallbackText)}</div>'">`;
+        } else {
+            box.innerHTML = `<div class="vs-logo-fallback">${escapeHtml(fallbackText)}</div>`;
+        }
+    }
+
+    function renderCaptainBox(containerId, photoUrl, captainName) {
+        const box = document.getElementById(containerId);
+        const init = getInitials(captainName);
+        if (photoUrl && photoUrl.trim() !== '') {
+            box.innerHTML = `<img class="captain-photo" src="${escapeHtml(photoUrl.trim())}" alt="Captain" onerror="this.outerHTML='<div class=\'captain-avatar-fallback\'>${escapeHtml(init)}</div>'">`;
+        } else {
+            box.innerHTML = `<div class="captain-avatar-fallback">${escapeHtml(init)}</div>`;
+        }
+    }
+
+    function renderPlayersGrid(containerId, rawList) {
+        const container = document.getElementById(containerId);
+        const items = (rawList || []).map(entry => {
+            const parts = String(entry).split('|');
+            const name = (parts[0] || '').trim();
+            const photo = (parts[1] || '').trim();
+            const init = getInitials(name);
+            const mediaHtml = photo
+                ? `<img class="player-thumb" src="${escapeHtml(photo)}" alt="" onerror="this.outerHTML='<div class=\'player-thumb-fallback\'>${escapeHtml(init)}</div>'">`
+                : `<div class="player-thumb-fallback">${escapeHtml(init)}</div>`;
+            return `<div class="player-photo-card">${mediaHtml}<div class="player-label-text">${escapeHtml(name)}</div></div>`;
+        });
+        container.innerHTML = items.join('');
+    }
+
+    function renderSponsor(index) {
+        if (!sponsorsList || sponsorsList.length === 0) return;
+        const item = sponsorsList[index % sponsorsList.length];
+        const contentEl = document.getElementById('sponsorContent');
+        const imgEl = document.getElementById('sponsorImg');
+        const nameEl = document.getElementById('sponsorName');
+
+        contentEl.classList.add('fade-out');
+        setTimeout(() => {
+            if (item.logo && item.logo.trim() !== '') {
+                imgEl.src = item.logo.trim();
+                imgEl.style.display = 'block';
+                imgEl.onerror = () => { imgEl.style.display = 'none'; };
+            } else {
+                imgEl.style.display = 'none';
+            }
+            nameEl.innerText = item.name || '';
+            contentEl.classList.remove('fade-out');
+        }, 320);
+    }
+
+    function startSponsorRotation(intervalSec) {
+        if (sponsorTimer) clearInterval(sponsorTimer);
+        if (!sponsorsList || sponsorsList.length === 0) return;
+        currentSponsorIdx = 0;
+        renderSponsor(currentSponsorIdx);
+        if (sponsorsList.length > 1) {
+            sponsorTimer = setInterval(() => {
+                currentSponsorIdx = (currentSponsorIdx + 1) % sponsorsList.length;
+                renderSponsor(currentSponsorIdx);
+            }, intervalSec * 1000);
+        }
+    }
+
+    socket.on('stateUpdate', (state) => {
+        const teamA = state.teamA || 'TEAM A';
+        const teamB = state.teamB || 'TEAM B';
+        const teamAPa = state.teamAPunjabi || teamA;
+        const teamBPa = state.teamBPunjabi || teamB;
+
+        document.getElementById('ovTourney').innerText = state.tournamentName || 'CIRCLE KABADDI CUP';
+        document.getElementById('ovGround').innerText = state.groundName || 'KABADDI GROUND';
+
+        document.getElementById('ovVsTeamA').innerText = teamA;
+        document.getElementById('ovVsTeamAPa').innerText = teamAPa;
+        document.getElementById('ovVsTeamB').innerText = teamB;
+        document.getElementById('ovVsTeamBPa').innerText = teamBPa;
+        document.getElementById('ovCapA').innerText = state.captainA || 'CAPTAIN A';
+        document.getElementById('ovCapB').innerText = state.captainB || 'CAPTAIN B';
+
+        renderLogoBox('vsLogoBoxA', state.teamALogo, getInitials(teamA));
+        renderLogoBox('vsLogoBoxB', state.teamBLogo, getInitials(teamB));
+        renderCaptainBox('capPhotoBoxA', state.captainAPhoto, state.captainA);
+        renderCaptainBox('capPhotoBoxB', state.captainBPhoto, state.captainB);
+
+        document.getElementById('ovListTitleA').innerText = teamA + " SQUAD";
+        document.getElementById('ovListPaA').innerText = teamAPa;
+        document.getElementById('ovListTitleB').innerText = teamB + " SQUAD";
+        document.getElementById('ovListPaB').innerText = teamBPa;
+        renderPlayersGrid('ovPlayersA', state.playersA);
+        renderPlayersGrid('ovPlayersB', state.playersB);
+
+        document.getElementById('ovScoreTeamA').innerText = teamA;
+        document.getElementById('ovScoreTeamAPa').innerText = teamAPa;
+        document.getElementById('ovScoreTeamB').innerText = teamB;
+        document.getElementById('ovScoreTeamBPa').innerText = teamBPa;
+        document.getElementById('ovPtsA').innerText = state.scoreA;
+        document.getElementById('ovPtsB').innerText = state.scoreB;
+        document.getElementById('ovHalf').innerText = state.half || '1ST HALF';
+
+        const logoAEl = document.getElementById('lScoreLogoA');
+        if (state.teamALogo && state.teamALogo.trim() !== '') {
+            logoAEl.src = state.teamALogo.trim();
+            logoAEl.style.display = 'block';
+            logoAEl.onerror = () => { logoAEl.style.display = 'none'; };
+        } else {
+            logoAEl.style.display = 'none';
+        }
+
+        const logoBEl = document.getElementById('lScoreLogoB');
+        if (state.teamBLogo && state.teamBLogo.trim() !== '') {
+            logoBEl.src = state.teamBLogo.trim();
+            logoBEl.style.display = 'block';
+            logoBEl.onerror = () => { logoBEl.style.display = 'none'; };
+        } else {
+            logoBEl.style.display = 'none';
+        }
+
+        document.querySelectorAll('.screen-panel, .left-corner-score').forEach(el => el.classList.remove('active'));
+        if (state.activeView !== 'none') {
+            const target = document.getElementById('view-' + state.activeView);
+            if (target) target.classList.add('active');
+        }
+
+        const tickerEl = document.getElementById('bottomTicker');
+        if (state.showTicker && state.tickerText && state.tickerText.trim() !== '') {
+            tickerEl.classList.add('active');
+            document.getElementById('ovTickerBadge').innerText = state.tickerBadge || 'LIVE KABADDI';
+            if (lastTickerText !== state.tickerText) {
+                lastTickerText = state.tickerText;
+                const moveEl = document.getElementById('ovTickerText');
+                moveEl.innerText = state.tickerText;
+                const duration = Math.max(18, Math.round(state.tickerText.length * 0.22));
+                moveEl.style.animationDuration = duration + 's';
+            }
+        } else {
+            tickerEl.classList.remove('active');
+        }
+
+        const sponsorBoxEl = document.getElementById('sponsorBox');
+        const incomingSponsors = state.sponsors || [];
+        const incomingInterval = state.sponsorInterval || 6;
+
+        if (state.showSponsors && incomingSponsors.length > 0) {
+            sponsorBoxEl.classList.add('active');
+            const listChanged = JSON.stringify(sponsorsList) !== JSON.stringify(incomingSponsors);
+            if (listChanged || currentIntervalSec !== incomingInterval) {
+                sponsorsList = incomingSponsors;
+                currentIntervalSec = incomingInterval;
+                startSponsorRotation(currentIntervalSec);
+            }
+        } else {
+            sponsorBoxEl.classList.remove('active');
+            if (sponsorTimer) clearInterval(sponsorTimer);
+        }
+    });
+</script>
+</body>
+</html>

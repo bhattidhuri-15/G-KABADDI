@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabaddi Live Broadcast Controller v3</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0e0f13; color: #fff; margin: 0; padding: 15px; }
+        .container { max-width: 920px; margin: auto; }
+        h2 { color: #ff5e00; border-bottom: 2px solid #2b2d38; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        h3 { margin-top: 0; color: #ffd000; }
+        .card { background: #181a22; padding: 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #2b2d38; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        button { padding: 12px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.18s; }
+        button:active { transform: scale(0.97); }
+        .btn-view { background: #1d5fa7; color: white; flex: 1; min-width: 145px; }
+        .btn-view.active { background: linear-gradient(135deg, #ff5e00, #ff2a00); box-shadow: 0 0 14px rgba(255, 94, 0, 0.75); }
+        .btn-toggle { background: #2c3142; color: white; flex: 1; min-width: 165px; }
+        .btn-toggle.on { background: #1f9d55; }
+        .btn-toggle.off { background: #6c757d; }
+        .btn-clear { background: #b91c1c; color: white; }
+        .score-box { text-align: center; background: #212430; padding: 15px; border-radius: 8px; border: 1px solid #303547; }
+        .score-num { font-size: 50px; font-weight: 800; color: #ffd000; margin: 10px 0; }
+        .btn-plus { background: #1f9d55; color: white; font-size: 18px; width: 64px; }
+        .btn-half { background: #e67e22; color: white; font-size: 16px; width: 64px; }
+        .btn-minus { background: #5c6370; color: white; font-size: 18px; width: 54px; }
+        input, textarea { width: 100%; padding: 9px; margin: 5px 0 12px 0; background: #242836; border: 1px solid #3c4257; color: white; border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        .save-btn { background: linear-gradient(135deg, #ffd000, #ff7b00); color: #000; width: 100%; font-size: 16px; font-weight: 800; }
+        .link-box { background: #090a0d; padding: 10px; border-radius: 6px; font-family: monospace; color: #22e584; word-break: break-all; border: 1px solid #242936; }
+        .hint { font-size: 12px; color: #a3abc2; margin-top: -7px; margin-bottom: 10px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🔥 Circle Kabaddi Broadcast Controller (v3)</h2>
+
+    <div class="card">
+        <strong>OBS / vMix Browser Source Link (1920x1080):</strong>
+        <div class="link-box" id="overlayUrl">Loading...</div>
+    </div>
+
+    <div class="card">
+        <h3>⚡ Aggressive Live Switcher</h3>
+        <div class="btn-group">
+            <button class="btn-view" id="btn-ground" onclick="setView('ground')">🔥 1. Ground Blast Intro</button>
+            <button class="btn-view" id="btn-vs" onclick="setView('vs')">⚔️ 2. Team VS + Captains</button>
+            <button class="btn-view" id="btn-listA" onclick="setView('listA')">🛡️ 3. Team A Squad + Photos</button>
+            <button class="btn-view" id="btn-listB" onclick="setView('listB')">🛡️ 4. Team B Squad + Photos</button>
+            <button class="btn-view" id="btn-score" onclick="setView('score')">📊 5. Left Corner Score</button>
+            <button class="btn-clear" onclick="setView('none')">❌ Hide Center/Score</button>
+        </div>
+        <div class="btn-group" style="margin-top: 12px; border-top: 1px solid #2b2d38; padding-top: 12px;">
+            <button class="btn-toggle" id="btn-toggle-ticker" onclick="toggleFeature('showTicker')">📰 Bottom Ticker: ON</button>
+            <button class="btn-toggle" id="btn-toggle-sponsors" onclick="toggleFeature('showSponsors')">🤝 Sponsor Rotation: ON</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🏆 Live Match Scoring (Left Corner Scoreboard)</h3>
+        <div class="grid-2">
+            <div class="score-box">
+                <div id="dispTeamA" style="font-weight:bold; font-size:18px;">TEAM A</div>
+                <div class="score-num" id="dispScoreA">0</div>
+                <button class="btn-plus" onclick="changeScore('A', 1)">+1</button>
+                <button class="btn-half" onclick="changeScore('A', 0.5)">+0.5</button>
+                <button class="btn-minus" onclick="changeScore('A', -0.5)">-0.5</button>
+            </div>
+            <div class="score-box">
+                <div id="dispTeamB" style="font-weight:bold; font-size:18px;">TEAM B</div>
+                <div class="score-num" id="dispScoreB">0</div>
+                <button class="btn-plus" onclick="changeScore('B', 1)">+1</button>
+                <button class="btn-half" onclick="changeScore('B', 0.5)">+0.5</button>
+                <button class="btn-minus" onclick="changeScore('B', -0.5)">-0.5</button>
+            </div>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button onclick="setHalf('1ST HALF')" style="background:#2d3748; color:white; flex:1;">1st Half</button>
+            <button onclick="setHalf('2ND HALF')" style="background:#2d3748; color:white; flex:1;">2nd Half</button>
+            <button onclick="resetScores()" style="background:#b91c1c; color:white;">Reset (0-0)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🏟️ Match, Punjabi Names, Logos, Captains & Squads</h3>
+        <div class="grid-2">
+            <div>
+                <label>Tournament Name:</label>
+                <input type="text" id="inTournament">
+            </div>
+            <div>
+                <label>Ground / Stadium Name:</label>
+                <input type="text" id="inGround">
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div style="background:#1e2230; padding:12px; border-radius:8px; border:1px solid #2e3448;">
+                <h3 style="font-size:16px;">Team A Details</h3>
+                <label>Team A Name (English):</label>
+                <input type="text" id="inTeamA">
+                <label>Team A Name (Punjabi / Scrolling):</label>
+                <input type="text" id="inTeamAPunjabi" placeholder="ਰਾਇਲ ਲਾਇਨਜ਼">
+                <label>Team A Logo URL:</label>
+                <input type="text" id="inTeamALogo" placeholder="https://.../teamA-logo.png">
+                <label>Team A Captain Name:</label>
+                <input type="text" id="inCaptainA">
+                <label>Team A Captain Photo URL:</label>
+                <input type="text" id="inCaptainAPhoto" placeholder="https://.../captainA.jpg">
+                <label>Team A Players (Format: <code>Name (Role) | Photo URL</code>):</label>
+                <textarea id="inPlayersA" rows="8"></textarea>
+            </div>
+
+            <div style="background:#1e2230; padding:12px; border-radius:8px; border:1px solid #2e3448;">
+                <h3 style="font-size:16px;">Team B Details</h3>
+                <label>Team B Name (English):</label>
+                <input type="text" id="inTeamB">
+                <label>Team B Name (Punjabi / Scrolling):</label>
+                <input type="text" id="inTeamBPunjabi" placeholder="ਸ਼ੇਰ-ਏ-ਪੰਜਾਬ">
+                <label>Team B Logo URL:</label>
+                <input type="text" id="inTeamBLogo" placeholder="https://.../teamB-logo.png">
+                <label>Team B Captain Name:</label>
+                <input type="text" id="inCaptainB">
+                <label>Team B Captain Photo URL:</label>
+                <input type="text" id="inCaptainBPhoto" placeholder="https://.../captainB.jpg">
+                <label>Team B Players (Format: <code>Name (Role) | Photo URL</code>):</label>
+                <textarea id="inPlayersB" rows="8"></textarea>
+            </div>
+        </div>
+        <div class="hint" style="margin-top:6px;">Tip: Player line mein photo URL optional hai. Agar photo URL nahi doge to player ka initial avatar dikhega.</div>
+        <button class="save-btn" onclick="saveDetails()">💾 Update All Match & Team Graphics</button>
+    </div>
+
+    <div class="card">
+        <h3>📰 Bottom Scrolling Ticker & Sponsor Rotation</h3>
+        <div class="grid-2">
+            <div>
+                <label>Ticker Left Badge:</label>
+                <input type="text" id="inTickerBadge">
+            </div>
+            <div>
+                <label>Sponsor Switch Interval (Seconds):</label>
+                <input type="number" id="inSponsorInterval" min="2" max="60" value="6">
+            </div>
+        </div>
+        <label>Bottom Ticker Scrolling Text:</label>
+        <input type="text" id="inTickerText">
+
+        <label>Sponsors (Format: <code>Sponsor Name | Logo URL</code> — one per line):</label>
+        <textarea id="inSponsors" rows="4"></textarea>
+        <button class="save-btn" onclick="saveTickerAndSponsors()">💾 Update Ticker & Sponsors</button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let currentState = {};
+
+    document.getElementById('overlayUrl').innerText = window.location.origin + '/overlay';
+
+    socket.on('stateUpdate', (state) => {
+        currentState = state;
+        document.getElementById('dispTeamA').innerText = state.teamA;
+        document.getElementById('dispTeamB').innerText = state.teamB;
+        document.getElementById('dispScoreA').innerText = state.scoreA;
+        document.getElementById('dispScoreB').innerText = state.scoreB;
+
+        const tickerBtn = document.getElementById('btn-toggle-ticker');
+        tickerBtn.innerText = state.showTicker ? '📰 Bottom Ticker: ON' : '📰 Bottom Ticker: OFF';
+        tickerBtn.className = 'btn-toggle ' + (state.showTicker ? 'on' : 'off');
+
+        const sponsorBtn = document.getElementById('btn-toggle-sponsors');
+        sponsorBtn.innerText = state.showSponsors ? '🤝 Sponsor Rotation: ON' : '🤝 Sponsor Rotation: OFF';
+        sponsorBtn.className = 'btn-toggle ' + (state.showSponsors ? 'on' : 'off');
+
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            document.getElementById('inTournament').value = state.tournamentName || '';
+            document.getElementById('inGround').value = state.groundName || '';
+            document.getElementById('inTeamA').value = state.teamA || '';
+            document.getElementById('inTeamAPunjabi').value = state.teamAPunjabi || '';
+            document.getElementById('inTeamALogo').value = state.teamALogo || '';
+            document.getElementById('inCaptainA').value = state.captainA || '';
+            document.getElementById('inCaptainAPhoto').value = state.captainAPhoto || '';
+            document.getElementById('inPlayersA').value = (state.playersA || []).join('\n');
+
+            document.getElementById('inTeamB').value = state.teamB || '';
+            document.getElementById('inTeamBPunjabi').value = state.teamBPunjabi || '';
+            document.getElementById('inTeamBLogo').value = state.teamBLogo || '';
+            document.getElementById('inCaptainB').value = state.captainB || '';
+            document.getElementById('inCaptainBPhoto').value = state.captainBPhoto || '';
+            document.getElementById('inPlayersB').value = (state.playersB || []).join('\n');
+
+            document.getElementById('inTickerBadge').value = state.tickerBadge || 'LIVE KABADDI';
+            document.getElementById('inTickerText').value = state.tickerText || '';
+            document.getElementById('inSponsorInterval').value = state.sponsorInterval || 6;
+            document.getElementById('inSponsors').value = (state.sponsors || [])
+                .map(s => s.logo ? `${s.name} | ${s.logo}` : s.name)
+                .join('\n');
+        }
+
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btn-' + state.activeView);
+        if (activeBtn) activeBtn.classList.add('active');
+    });
+
+    function setView(viewName) {
+        socket.emit('updateState', { activeView: viewName });
+    }
+
+    function toggleFeature(key) {
+        socket.emit('updateState', { [key]: !currentState[key] });
+    }
+
+    function changeScore(team, delta) {
+        if (team === 'A') {
+            socket.emit('updateState', { scoreA: Math.max(0, currentState.scoreA + delta) });
+        } else {
+            socket.emit('updateState', { scoreB: Math.max(0, currentState.scoreB + delta) });
+        }
+    }
+
+    function setHalf(halfText) {
+        socket.emit('updateState', { half: halfText });
+    }
+
+    function resetScores() {
+        if (confirm("Kya aap score 0-0 karna chahte hain?")) {
+            socket.emit('updateState', { scoreA: 0, scoreB: 0 });
+        }
+    }
+
+    function saveDetails() {
+        socket.emit('updateState', {
+            tournamentName: document.getElementById('inTournament').value.trim(),
+            groundName: document.getElementById('inGround').value.trim(),
+            teamA: document.getElementById('inTeamA').value.trim(),
+            teamAPunjabi: document.getElementById('inTeamAPunjabi').value.trim(),
+            teamALogo: document.getElementById('inTeamALogo').value.trim(),
+            captainA: document.getElementById('inCaptainA').value.trim(),
+            captainAPhoto: document.getElementById('inCaptainAPhoto').value.trim(),
+            playersA: document.getElementById('inPlayersA').value.split('\n').filter(p => p.trim() !== ''),
+
+            teamB: document.getElementById('inTeamB').value.trim(),
+            teamBPunjabi: document.getElementById('inTeamBPunjabi').value.trim(),
+            teamBLogo: document.getElementById('inTeamBLogo').value.trim(),
+            captainB: document.getElementById('inCaptainB').value.trim(),
+            captainBPhoto: document.getElementById('inCaptainBPhoto').value.trim(),
+            playersB: document.getElementById('inPlayersB').value.split('\n').filter(p => p.trim() !== '')
+        });
+        alert("Match, Punjabi Names, Logos, Captains & Squads Updated!");
+    }
+
+    function saveTickerAndSponsors() {
+        const rawLines = document.getElementById('inSponsors').value.split('\n').filter(l => l.trim() !== '');
+        const parsedSponsors = rawLines.map(line => {
+            const parts = line.split('|');
+            return {
+                name: parts[0].trim(),
+                logo: parts[1] ? parts[1].trim() : ''
+            };
+        });
+
+        socket.emit('updateState', {
+            tickerBadge: document.getElementById('inTickerBadge').value.trim() || 'LIVE KABADDI',
+            tickerText: document.getElementById('inTickerText').value.trim(),
+            sponsorInterval: Math.max(2, parseInt(document.getElementById('inSponsorInterval').value, 10) || 6),
+            sponsors: parsedSponsors
+        });
+        alert("Ticker & Sponsors Updated!");
+    }
+</script>
+</body>
+</html>
