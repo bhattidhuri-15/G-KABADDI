@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kabaddi Live Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            width: 1920px; height: 1080px;
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+        }
+
+        .screen-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center;
+            animation: fadeIn 0.5s ease-out;
+            padding-bottom: 60px;
+        }
+        .screen-panel.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 1. GROUND INTRO */
+        .ground-card {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            border: 4px solid #f1c40f; border-radius: 20px;
+            padding: 50px 90px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .tourney-title { color: #f1c40f; font-size: 32px; letter-spacing: 3px; text-transform: uppercase; }
+        .ground-title { font-family: 'Teko', sans-serif; color: #fff; font-size: 95px; line-height: 1.1; margin-top: 10px; text-shadow: 3px 3px 10px #000; }
+        .live-badge { display: inline-block; background: #e74c3c; color: #fff; padding: 5px 25px; border-radius: 30px; font-size: 24px; margin-top: 20px; letter-spacing: 2px; }
+
+        /* 2. TEAM VS TEAM */
+        .vs-container {
+            display: flex; align-items: center; gap: 40px;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 6px solid #f39c12; border-bottom: 6px solid #f39c12;
+            padding: 60px 100px; width: 100%; justify-content: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+        }
+        .team-box {
+            background: linear-gradient(180deg, #1e3c72, #2a5298);
+            padding: 40px 60px; border-radius: 15px; border: 3px solid #fff;
+            min-width: 450px; text-align: center;
+        }
+        .team-box.team-b { background: linear-gradient(180deg, #8e0e00, #1f1c18); }
+        .team-box h1 { font-family: 'Teko', sans-serif; font-size: 80px; color: #fff; letter-spacing: 2px; }
+        .vs-circle {
+            width: 120px; height: 120px; background: #f1c40f; color: #000;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-family: 'Teko', sans-serif; font-size: 65px; font-weight: bold;
+            box-shadow: 0 0 30px #f1c40f;
+        }
+
+        /* 3 & 4. TEAM SQUAD LIST */
+        .squad-card {
+            width: 900px; background: linear-gradient(135deg, #141e30, #243b55);
+            border: 4px solid #f1c40f; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+        }
+        .squad-header {
+            background: #f1c40f; color: #000; padding: 20px; text-align: center;
+            font-family: 'Teko', sans-serif; font-size: 65px; line-height: 1;
+        }
+        .squad-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 35px;
+        }
+        .player-item {
+            background: rgba(255,255,255,0.1); color: #fff; padding: 15px 25px;
+            border-left: 6px solid #f1c40f; font-size: 28px; border-radius: 6px;
+        }
+
+        /* 5. RIGHT CORNER LIVE SCOREBOARD */
+        .corner-score {
+            position: absolute; top: 45px; right: 50px;
+            display: none; flex-direction: column;
+            width: 390px; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid #f1c40f;
+            animation: slideLeft 0.4s ease-out;
+        }
+        .corner-score.active { display: flex; }
+
+        @keyframes slideLeft {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .score-top-bar {
+            background: #f1c40f; color: #000; font-size: 16px; font-weight: 800;
+            padding: 4px 12px; display: flex; justify-content: space-between;
+        }
+        .score-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 18px; color: #fff; font-size: 24px; font-weight: 800;
+        }
+        .row-a { background: linear-gradient(90deg, #0f2027, #203a43); border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .row-b { background: linear-gradient(90deg, #4b134f, #c94b4b); }
+        .pts {
+            background: #000; color: #f1c40f; padding: 2px 14px;
+            border-radius: 6px; font-family: 'Teko', sans-serif; font-size: 38px; line-height: 1.1;
+            min-width: 70px; text-align: center;
+        }
+
+        /* 6. SPONSOR LOGO ROTATION WIDGET (Top-Left Corner) */
+        .sponsor-box {
+            position: absolute; top: 45px; left: 50px;
+            width: 310px;
+            background: linear-gradient(135deg, rgba(15, 32, 39, 0.95), rgba(32, 58, 67, 0.95));
+            border: 2px solid #f1c40f;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+        }
+        .sponsor-box.active { display: flex; }
+        .sponsor-header {
+            background: #f1c40f; color: #000;
+            font-size: 13px; font-weight: 800;
+            text-align: center; padding: 3px 10px;
+            letter-spacing: 1.5px; text-transform: uppercase;
+        }
+        .sponsor-content {
+            height: 95px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 10px 16px; gap: 12px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .sponsor-content.fade-out {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        .sponsor-logo-img {
+            max-height: 68px; max-width: 90px;
+            object-fit: contain; border-radius: 6px;
+            background: rgba(255,255,255,0.08); padding: 4px;
+        }
+        .sponsor-name-text {
+            font-family: 'Teko', sans-serif;
+            font-size: 34px; line-height: 1.05;
+            color: #fff; text-align: center;
+            letter-spacing: 1px;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* 7. BOTTOM TICKER BAR */
+        .bottom-ticker {
+            position: absolute; bottom: 0; left: 0;
+            width: 1920px; height: 54px;
+            background: linear-gradient(90deg, #0b132b, #1c2541);
+            border-top: 3px solid #f1c40f;
+            display: none; align-items: center;
+            box-shadow: 0 -6px 25px rgba(0,0,0,0.85);
+            z-index: 50;
+        }
+        .bottom-ticker.active { display: flex; }
+        .ticker-label {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: #fff;
+            height: 100%;
+            padding: 0 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            white-space: nowrap;
+            border-right: 3px solid #f1c40f;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+        .ticker-track {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            height: 100%;
+            display: flex; align-items: center;
+        }
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            animation: tickerScroll 26s linear infinite;
+        }
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top-Left Sponsor Logo Rotation -->
+    <div id="sponsorBox" class="sponsor-box">
+        <div class="sponsor-header">OFFICIAL SPONSOR</div>
+        <div id="sponsorContent" class="sponsor-content">
+            <img id="sponsorImg" class="sponsor-logo-img" src="" alt="" style="display:none;">
+            <div id="sponsorName" class="sponsor-name-text">SPONSOR</div>
+        </div>
+    </div>
+
+    <!-- 1. Ground Graphic -->
+    <div id="view-ground" class="screen-panel">
+        <div class="ground-card">
+            <div class="tourney-title" id="ovTourney">TOURNAMENT</div>
+            <div class="ground-title" id="ovGround">GROUND NAME</div>
+            <div class="live-badge">● LIVE CIRCLE KABADDI</div>
+        </div>
+    </div>
+
+    <!-- 2. Team vs Team Graphic -->
+    <div id="view-vs" class="screen-panel">
+        <div class="vs-container">
+            <div class="team-box"><h1 id="ovVsTeamA">TEAM A</h1></div>
+            <div class="vs-circle">VS</div>
+            <div class="team-box team-b"><h1 id="ovVsTeamB">TEAM B</h1></div>
+        </div>
+    </div>
+
+    <!-- 3. Team A Squad List -->
+    <div id="view-listA" class="screen-panel">
+        <div class="squad-card">
+            <div class="squad-header" id="ovListTitleA">TEAM A SQUAD</div>
+            <div class="squad-grid" id="ovPlayersA"></div>
+        </div>
+    </div>
+
+    <!-- 4. Team B Squad List -->
+    <div id="view-listB" class="screen-panel">
+        <div class="squad-card">
+            <div class="squad-header" id="ovListTitleB">TEAM B SQUAD</div>
+            <div class="squad-grid" id="ovPlayersB"></div>
+        </div>
+    </div>
+
+    <!-- 5. Right Corner Live Scoreboard -->
+    <div id="view-score" class="corner-score">
+        <div class="score-top-bar">
+            <span>CIRCLE KABADDI</span>
+            <span id="ovHalf">1ST HALF</span>
+        </div>
+        <div class="score-row row-a">
+            <span id="ovScoreTeamA">TEAM A</span>
+            <span class="pts" id="ovPtsA">0</span>
+        </div>
+        <div class="score-row row-b">
+            <span id="ovScoreTeamB">TEAM B</span>
+            <span class="pts" id="ovPtsB">0</span>
+        </div>
+    </div>
+
+    <!-- Bottom Scrolling Ticker Bar -->
+    <div id="bottomTicker" class="bottom-ticker">
+        <div class="ticker-label" id="ovTickerBadge">LIVE UPDATE</div>
+        <div class="ticker-track">
+            <div class="ticker-move" id="ovTickerText">WELCOME TO CIRCLE KABADDI LIVE BROADCAST</div>
+        </div>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let sponsorsList = [];
+    let currentSponsorIdx = 0;
+    let sponsorTimer = null;
+    let currentIntervalSec = 6;
+    let lastTickerText = "";
+
+    function renderSponsor(index) {
+        if (!sponsorsList || sponsorsList.length === 0) return;
+        const item = sponsorsList[index % sponsorsList.length];
+        const contentEl = document.getElementById('sponsorContent');
+        const imgEl = document.getElementById('sponsorImg');
+        const nameEl = document.getElementById('sponsorName');
+
+        contentEl.classList.add('fade-out');
+        setTimeout(() => {
+            if (item.logo && item.logo.trim() !== '') {
+                imgEl.src = item.logo.trim();
+                imgEl.style.display = 'block';
+                imgEl.onerror = () => { imgEl.style.display = 'none'; };
+            } else {
+                imgEl.style.display = 'none';
+            }
+            nameEl.innerText = item.name || '';
+            contentEl.classList.remove('fade-out');
+        }, 350);
+    }
+
+    function startSponsorRotation(intervalSec) {
+        if (sponsorTimer) clearInterval(sponsorTimer);
+        if (!sponsorsList || sponsorsList.length === 0) return;
+        currentSponsorIdx = 0;
+        renderSponsor(currentSponsorIdx);
+        if (sponsorsList.length > 1) {
+            sponsorTimer = setInterval(() => {
+                currentSponsorIdx = (currentSponsorIdx + 1) % sponsorsList.length;
+                renderSponsor(currentSponsorIdx);
+            }, intervalSec * 1000);
+        }
+    }
+
+    socket.on('stateUpdate', (state) => {
+        // Core Match Texts
+        document.getElementById('ovTourney').innerText = state.tournamentName;
+        document.getElementById('ovGround').innerText = state.groundName;
+        document.getElementById('ovVsTeamA').innerText = state.teamA;
+        document.getElementById('ovVsTeamB').innerText = state.teamB;
+        document.getElementById('ovListTitleA').innerText = state.teamA + " - PLAYING SQUAD";
+        document.getElementById('ovListTitleB').innerText = state.teamB + " - PLAYING SQUAD";
+        document.getElementById('ovScoreTeamA').innerText = state.teamA;
+        document.getElementById('ovScoreTeamB').innerText = state.teamB;
+        document.getElementById('ovPtsA').innerText = state.scoreA;
+        document.getElementById('ovPtsB').innerText = state.scoreB;
+        document.getElementById('ovHalf').innerText = state.half;
+
+        // Squads
+        document.getElementById('ovPlayersA').innerHTML = state.playersA.map(p => `<div class="player-item">${p}</div>`).join('');
+        document.getElementById('ovPlayersB').innerHTML = state.playersB.map(p => `<div class="player-item">${p}</div>`).join('');
+
+        // Main Screen View Switcher
+        document.querySelectorAll('.screen-panel, .corner-score').forEach(el => el.classList.remove('active'));
+        if (state.activeView !== 'none') {
+            const target = document.getElementById('view-' + state.activeView);
+            if (target) target.classList.add('active');
+        }
+
+        // Bottom Ticker Bar
+        const tickerEl = document.getElementById('bottomTicker');
+        if (state.showTicker && state.tickerText && state.tickerText.trim() !== '') {
+            tickerEl.classList.add('active');
+            document.getElementById('ovTickerBadge').innerText = state.tickerBadge || 'LIVE UPDATE';
+            if (lastTickerText !== state.tickerText) {
+                lastTickerText = state.tickerText;
+                const moveEl = document.getElementById('ovTickerText');
+                moveEl.innerText = state.tickerText;
+                // Adjust animation duration based on text length for smooth constant speed
+                const duration = Math.max(18, Math.round(state.tickerText.length * 0.22));
+                moveEl.style.animationDuration = duration + 's';
+            }
+        } else {
+            tickerEl.classList.remove('active');
+        }
+
+        // Sponsor Logo Rotation
+        const sponsorBoxEl = document.getElementById('sponsorBox');
+        const incomingSponsors = state.sponsors || [];
+        const incomingInterval = state.sponsorInterval || 6;
+
+        if (state.showSponsors && incomingSponsors.length > 0) {
+            sponsorBoxEl.classList.add('active');
+            const listChanged = JSON.stringify(sponsorsList) !== JSON.stringify(incomingSponsors);
+            if (listChanged || currentIntervalSec !== incomingInterval) {
+                sponsorsList = incomingSponsors;
+                currentIntervalSec = incomingInterval;
+                startSponsorRotation(currentIntervalSec);
+            }
+        } else {
+            sponsorBoxEl.classList.remove('active');
+            if (sponsorTimer) clearInterval(sponsorTimer);
+        }
+    });
+</script>
+</body>
+</html>

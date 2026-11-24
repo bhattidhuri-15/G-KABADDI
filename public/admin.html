@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabaddi Live Broadcast Controller</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
+        .container { max-width: 860px; margin: auto; }
+        h2 { color: #f39c12; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        h3 { margin-top: 0; color: #f1c40f; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 650px) { .grid-2 { grid-template-columns: 1fr; } }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        button { padding: 12px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-view { background: #2980b9; color: white; flex: 1; min-width: 140px; }
+        .btn-view.active { background: #27ae60; box-shadow: 0 0 10px #27ae60; }
+        .btn-toggle { background: #34495e; color: white; flex: 1; min-width: 160px; }
+        .btn-toggle.on { background: #27ae60; }
+        .btn-toggle.off { background: #7f8c8d; }
+        .btn-clear { background: #c0392b; color: white; }
+        .score-box { text-align: center; background: #252525; padding: 15px; border-radius: 8px; }
+        .score-num { font-size: 48px; font-weight: bold; color: #f1c40f; margin: 10px 0; }
+        .btn-plus { background: #27ae60; color: white; font-size: 18px; width: 60px; }
+        .btn-half { background: #e67e22; color: white; font-size: 16px; width: 60px; }
+        .btn-minus { background: #7f8c8d; color: white; font-size: 18px; width: 50px; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0 12px 0; background: #2c2c2c; border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        .save-btn { background: #f39c12; color: #000; width: 100%; font-size: 16px; }
+        .link-box { background: #000; padding: 10px; border-radius: 5px; font-family: monospace; color: #2ecc71; word-break: break-all; }
+        .hint { font-size: 12px; color: #aaa; margin-top: -8px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🏆 Circle Kabaddi Broadcast Controller</h2>
+
+    <div class="card">
+        <strong>OBS / vMix Browser Source Link (1920x1080):</strong>
+        <div class="link-box" id="overlayUrl">Loading...</div>
+    </div>
+
+    <!-- Graphics Switcher -->
+    <div class="card">
+        <h3>📺 Screen Graphics Control (Live Switcher)</h3>
+        <div class="btn-group">
+            <button class="btn-view" id="btn-ground" onclick="setView('ground')">1. Ground Name</button>
+            <button class="btn-view" id="btn-vs" onclick="setView('vs')">2. Team vs Team</button>
+            <button class="btn-view" id="btn-listA" onclick="setView('listA')">3. Team A Players</button>
+            <button class="btn-view" id="btn-listB" onclick="setView('listB')">4. Team B Players</button>
+            <button class="btn-view" id="btn-score" onclick="setView('score')">5. Live Corner Score</button>
+            <button class="btn-clear" onclick="setView('none')">❌ Hide Center/Score</button>
+        </div>
+        <div class="btn-group" style="margin-top: 12px; border-top: 1px solid #333; padding-top: 12px;">
+            <button class="btn-toggle" id="btn-toggle-ticker" onclick="toggleFeature('showTicker')">📰 Bottom Ticker: ON</button>
+            <button class="btn-toggle" id="btn-toggle-sponsors" onclick="toggleFeature('showSponsors')">🤝 Sponsor Rotation: ON</button>
+        </div>
+    </div>
+
+    <!-- Live Scoring -->
+    <div class="card">
+        <h3>⚡ Live Match Scoring</h3>
+        <div class="grid-2">
+            <div class="score-box">
+                <div id="dispTeamA" style="font-weight:bold; font-size:18px;">TEAM A</div>
+                <div class="score-num" id="dispScoreA">0</div>
+                <button class="btn-plus" onclick="changeScore('A', 1)">+1</button>
+                <button class="btn-half" onclick="changeScore('A', 0.5)">+0.5</button>
+                <button class="btn-minus" onclick="changeScore('A', -0.5)">-0.5</button>
+            </div>
+            <div class="score-box">
+                <div id="dispTeamB" style="font-weight:bold; font-size:18px;">TEAM B</div>
+                <div class="score-num" id="dispScoreB">0</div>
+                <button class="btn-plus" onclick="changeScore('B', 1)">+1</button>
+                <button class="btn-half" onclick="changeScore('B', 0.5)">+0.5</button>
+                <button class="btn-minus" onclick="changeScore('B', -0.5)">-0.5</button>
+            </div>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button onclick="setHalf('1ST HALF')" style="background:#34495e; color:white; flex:1;">1st Half</button>
+            <button onclick="setHalf('2ND HALF')" style="background:#34495e; color:white; flex:1;">2nd Half</button>
+            <button onclick="resetScores()" style="background:#c0392b; color:white;">Reset Score (0-0)</button>
+        </div>
+    </div>
+
+    <!-- Bottom Ticker & Sponsors Setup -->
+    <div class="card">
+        <h3>📰 Bottom Ticker & Sponsor Logo Rotation</h3>
+        <div class="grid-2">
+            <div>
+                <label>Ticker Left Badge Text:</label>
+                <input type="text" id="inTickerBadge" placeholder="LIVE UPDATE">
+            </div>
+            <div>
+                <label>Sponsor Switch Time (Seconds):</label>
+                <input type="number" id="inSponsorInterval" min="2" max="60" value="6">
+            </div>
+        </div>
+        <label>Bottom Scrolling Ticker Text:</label>
+        <input type="text" id="inTickerText" placeholder="Enter scrolling news, tournament announcements, or next match details...">
+
+        <label>Sponsors List (Format: <code>Sponsor Name | Logo Image URL</code> — one per line):</label>
+        <textarea id="inSponsors" rows="5" placeholder="KHALSA MOTORS | https://example.com/logo1.png&#10;PUNJAB AGRO FEEDS | &#10;ROYAL SPORTS ACADEMY | https://example.com/logo2.png"></textarea>
+        <div class="hint">Tip: Agar kisi sponsor ka logo URL nahi hai, to sirf sponsor ka naam likhein (e.g. <code>KHALSA MOTORS</code>) — overlay par stylish badge ban jayega.</div>
+
+        <button class="save-btn" onclick="saveTickerAndSponsors()">💾 Update Ticker & Sponsors</button>
+    </div>
+
+    <!-- Match & Team Setup -->
+    <div class="card">
+        <h3>⚙️ Match Details & Squads Setup</h3>
+        <label>Tournament Name:</label>
+        <input type="text" id="inTournament">
+        <label>Ground / Village Name:</label>
+        <input type="text" id="inGround">
+
+        <div class="grid-2">
+            <div>
+                <label>Team A Name:</label>
+                <input type="text" id="inTeamA">
+                <label>Team A Players (Ek line mein ek player):</label>
+                <textarea id="inPlayersA" rows="8"></textarea>
+            </div>
+            <div>
+                <label>Team B Name:</label>
+                <input type="text" id="inTeamB">
+                <label>Team B Players (Ek line mein ek player):</label>
+                <textarea id="inPlayersB" rows="8"></textarea>
+            </div>
+        </div>
+        <button class="save-btn" onclick="saveDetails()">💾 Update Match & Team Details</button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let currentState = {};
+
+    document.getElementById('overlayUrl').innerText = window.location.origin + '/overlay';
+
+    socket.on('stateUpdate', (state) => {
+        currentState = state;
+        document.getElementById('dispTeamA').innerText = state.teamA;
+        document.getElementById('dispTeamB').innerText = state.teamB;
+        document.getElementById('dispScoreA').innerText = state.scoreA;
+        document.getElementById('dispScoreB').innerText = state.scoreB;
+
+        // Toggle buttons UI
+        const tickerBtn = document.getElementById('btn-toggle-ticker');
+        tickerBtn.innerText = state.showTicker ? '📰 Bottom Ticker: ON' : '📰 Bottom Ticker: OFF';
+        tickerBtn.className = 'btn-toggle ' + (state.showTicker ? 'on' : 'off');
+
+        const sponsorBtn = document.getElementById('btn-toggle-sponsors');
+        sponsorBtn.innerText = state.showSponsors ? '🤝 Sponsor Rotation: ON' : '🤝 Sponsor Rotation: OFF';
+        sponsorBtn.className = 'btn-toggle ' + (state.showSponsors ? 'on' : 'off');
+
+        // Fill inputs only if not currently focused
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            document.getElementById('inTournament').value = state.tournamentName;
+            document.getElementById('inGround').value = state.groundName;
+            document.getElementById('inTeamA').value = state.teamA;
+            document.getElementById('inTeamB').value = state.teamB;
+            document.getElementById('inPlayersA').value = state.playersA.join('\n');
+            document.getElementById('inPlayersB').value = state.playersB.join('\n');
+            document.getElementById('inTickerBadge').value = state.tickerBadge || 'LIVE UPDATE';
+            document.getElementById('inTickerText').value = state.tickerText || '';
+            document.getElementById('inSponsorInterval').value = state.sponsorInterval || 6;
+            document.getElementById('inSponsors').value = (state.sponsors || [])
+                .map(s => s.logo ? `${s.name} | ${s.logo}` : s.name)
+                .join('\n');
+        }
+
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btn-' + state.activeView);
+        if (activeBtn) activeBtn.classList.add('active');
+    });
+
+    function setView(viewName) {
+        socket.emit('updateState', { activeView: viewName });
+    }
+
+    function toggleFeature(key) {
+        socket.emit('updateState', { [key]: !currentState[key] });
+    }
+
+    function changeScore(team, delta) {
+        if (team === 'A') {
+            let newScore = Math.max(0, currentState.scoreA + delta);
+            socket.emit('updateState', { scoreA: newScore });
+        } else {
+            let newScore = Math.max(0, currentState.scoreB + delta);
+            socket.emit('updateState', { scoreB: newScore });
+        }
+    }
+
+    function setHalf(halfText) {
+        socket.emit('updateState', { half: halfText });
+    }
+
+    function resetScores() {
+        if (confirm("Kya aap score 0-0 karna chahte hain?")) {
+            socket.emit('updateState', { scoreA: 0, scoreB: 0 });
+        }
+    }
+
+    function saveTickerAndSponsors() {
+        const rawLines = document.getElementById('inSponsors').value.split('\n').filter(l => l.trim() !== '');
+        const parsedSponsors = rawLines.map(line => {
+            const parts = line.split('|');
+            return {
+                name: parts[0].trim(),
+                logo: parts[1] ? parts[1].trim() : ''
+            };
+        });
+
+        socket.emit('updateState', {
+            tickerBadge: document.getElementById('inTickerBadge').value.trim() || 'LIVE UPDATE',
+            tickerText: document.getElementById('inTickerText').value.trim(),
+            sponsorInterval: Math.max(2, parseInt(document.getElementById('inSponsorInterval').value, 10) || 6),
+            sponsors: parsedSponsors
+        });
+        alert("Ticker & Sponsors Updated!");
+    }
+
+    function saveDetails() {
+        socket.emit('updateState', {
+            tournamentName: document.getElementById('inTournament').value,
+            groundName: document.getElementById('inGround').value,
+            teamA: document.getElementById('inTeamA').value,
+            teamB: document.getElementById('inTeamB').value,
+            playersA: document.getElementById('inPlayersA').value.split('\n').filter(p => p.trim() !== ''),
+            playersB: document.getElementById('inPlayersB').value.split('\n').filter(p => p.trim() !== '')
+        });
+        alert("Match Details Updated!");
+    }
+</script>
+</body>
+</html>
